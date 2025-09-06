@@ -1,5 +1,9 @@
 <?php
-
+// FORCE AES-128-CBC CIPHER FOR RAILWAY
+if (empty($_ENV['APP_CIPHER'])) {
+    $_ENV['APP_CIPHER'] = 'AES-128-CBC';
+    putenv('APP_CIPHER=AES-128-CBC');
+}
 /*
 |--------------------------------------------------------------------------
 | Create The Application
