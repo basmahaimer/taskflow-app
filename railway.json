@@ -5,7 +5,7 @@
     "buildCommand": "composer install --optimize-autoloader --no-dev --ignore-platform-reqs --no-scripts"
   },
   "deploy": {
-    "startCommand": "php -S 0.0.0.0:$PORT public/index.php",
+    "startCommand": "php artisan optimize:clear && php artisan storage:link && (php -S 0.0.0.0:$PORT public/index.php &) && sleep 5 && tail -f /dev/null",
     "restartPolicyType": "ON_FAILURE"
   }
 }
