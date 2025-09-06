@@ -1,9 +1,4 @@
 <?php
-// → DÉBUT DE L'AJOUT POUR RAILWAY ←
-if (isset($_ENV['PORT'])) {
-    $_SERVER['SERVER_PORT'] = $_ENV['PORT'];
-}
-// → FIN DE L'AJOUT POUR RAILWAY ←
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
