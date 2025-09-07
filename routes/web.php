@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +18,3 @@ Route::get('/', function () {
 });
 
 
-Route::get('/seed-user', function () {
-    Artisan::call('db:seed --class=UserSeeder');
-    return 'User created!';
-});
