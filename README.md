@@ -1,66 +1,197 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📋 TaskFlow - Application de Gestion des Tâches
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![Laravel](https://img.shields.io/badge/Laravel-10-FF2D20?style=for-the-badge&logo=laravel)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql)
 
-## About Laravel
+**TaskFlow** est une application complète de gestion des tâches conçue pour les équipes, permettant une organisation efficace du travail avec une interface intuitive et des fonctionnalités avancées.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ✨ Fonctionnalités Principales
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 👤 Espace Utilisateur
+- **Authentification sécurisée** avec tokens Sanctum
+- **Tableau de bord personnel** avec statistiques des tâches
+- **Gestion complète des tâches** (création, modification, suppression)
+- **Système de statuts** (À faire → En cours → Terminé)
+- **Assignation flexible** (à soi-même ou aux autres utilisateurs)
+- **Filtres avancés** par priorité et statut
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 👑 Espace Administrateur
+- **Gestion centralisée des utilisateurs**
+- **Tableau de bord administratif** complet
+- **Création et modification** des comptes utilisateurs
+- **Supervision** de l'ensemble des activités
 
-## Learning Laravel
+## 🛠️ Architecture Technique
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+```
+taskflow-app/
+├── 📁 backend/          # API Laravel 10 + Sanctum
+│   ├── app/
+│   │   ├── Models/
+│   │   ├── Http/
+│   │   │   ├── Controllers/
+│   │   │   └── Middleware/
+│   │   └── Policies/
+│   ├── database/
+│   │   ├── migrations/
+│   │   └── seeders/
+│   └── routes/
+│       └── api.php
+└── 📁 frontend/         # Application React
+    ├── src/
+    │   ├── components/  # Composants réutilisables
+    │   ├── pages/       # Pages de l'application
+    │   ├── services/    # Configuration API
+    │   └── styles/      # Feuilles de style
+    └── public/
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🚀 Installation Locale
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Prérequis
+- **PHP** 8.1 ou supérieur
+- **Composer** 
+- **Node.js** 16+ et npm
+- **MySQL** 5.7+ ou MariaDB
+- **Git**
 
-## Laravel Sponsors
+### 1. Cloner le projet
+```bash
+git clone https://github.com/basmahaimer/taskflow-app.git
+cd taskflow-app
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Configuration du Backend (Laravel)
+```bash
+# Installation des dépendances PHP
+cd backend
+composer install
 
-### Premium Partners
+# Configuration de l'environnement
+cp .env.example .env
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+# Génération de la clé d'application
+php artisan key:generate
 
-## Contributing
+# Configuration de la base de données
+# Éditez le fichier .env avec vos paramètres :
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=taskflow_db
+DB_USERNAME=votre_utilisateur
+DB_PASSWORD=votre_mot_de_passe
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Migration et seeding de la base
+php artisan migrate --seed
 
-## Code of Conduct
+# Installation de Sanctum
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+php artisan migrate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Démarrage du serveur
+php artisan serve
+```
+📌 Le serveur API sera disponible sur http://localhost:8000
 
-## Security Vulnerabilities
+### 3. Configuration du Frontend (React)
+```bash
+# Installation des dépendances JavaScript
+cd ../frontend
+npm install
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Configuration de l'URL API
+# Vérifiez que REACT_APP_API_URL pointe vers votre backend
+# Dans le fichier .env ou .env.local :
+REACT_APP_API_URL=http://localhost:8000
 
-## License
+# Démarrage de l'application
+npm start
+```
+📌 L'application sera disponible sur http://localhost:3000
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🔐 Comptes de Test
+
+Après le seeding, ces comptes sont disponibles :
+
+### Administrateur
+- **Email:** admin@taskflow.com
+- **Mot de passe:** password
+- **Accès:** Dashboard complet + gestion utilisateurs
+
+### Utilisateur Standard
+- **Email:** user@taskflow.com  
+- **Mot de passe:** password
+- **Accès:** Gestion de ses tâches uniquement
+
+## 📡 API Endpoints
+
+### Authentification
+- `POST /api/register` - Création de compte
+- `POST /api/login` - Connexion et obtention du token
+- `POST /api/logout` - Déconnexion
+
+### Tâches (Protégé par auth:sanctum)
+- `GET /api/tasks` - Liste des tâches de l'utilisateur
+- `POST /api/tasks` - Création d'une nouvelle tâche
+- `GET /api/tasks/{id}` - Détails d'une tâche
+- `PUT /api/tasks/{id}` - Modification d'une tâche
+- `DELETE /api/tasks/{id}` - Suppression d'une tâche
+- `PUT /api/tasks/{id}/status` - Changement de statut
+
+### Administration (Middleware admin)
+- `GET /api/admin/users` - Liste des utilisateurs
+- `POST /api/admin/users` - Création d'utilisateur
+- `PUT /api/admin/users/{id}` - Modification d'utilisateur
+- `DELETE /api/admin/users/{id}` - Suppression d'utilisateur
+
+## 🚦 Déploiement en Production
+
+### Options Recommandées
+- **Frontend:** Vercel, Netlify ou GitHub Pages
+- **Backend:** Heroku, DigitalOcean ou Render
+- **Base de données:** MySQL, PostgreSQL ou SQLite
+
+### Variables d'environnement critiques
+```env
+# Backend
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://votre-domaine.com
+
+# Frontend  
+REACT_APP_API_URL=https://votre-api.com
+```
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! Pour contribuer :
+
+1. Fork le projet
+2. Créez votre branche (`git checkout -b feature/ma-fonctionnalite`)
+3. Committez vos changements (`git commit -m 'Ajout ma fonctionnalité'`)
+4. Push sur la branche (`git push origin feature/ma-fonctionnalite`)
+5. Ouvrez une Pull Request
+
+## 📝 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 🆘 Support
+
+Si vous rencontrez des problèmes :
+
+1. Vérifiez les logs Laravel (`storage/logs/laravel.log`)
+2. Consultez les issues GitHub existantes
+3. Créez une nouvelle issue avec des détails complets
+
+## 🌟 Remerciements
+
+Développé avec passion en utilisant les technologies modernes pour offrir une expérience utilisateur optimale.
+
+---
+
+**TaskFlow** - Organisez votre travail, boostez votre productivité ! 🚀
+
+*Développé par [Basma Haimer](https://github.com/basmahaimer)*
