@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-import Sidebar from "../components/Navbar";
+import UserSidebar from "../components/UserSidebar";
+import "../styles/DashboardUser.css";
 
 const DashboardUser = () => {
   const [tasks, setTasks] = useState([]);
@@ -19,10 +20,12 @@ const DashboardUser = () => {
   });
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     fetchTasks();
     fetchUsers();
+    fetchCurrentUser();
   }, []);
 
   useEffect(() => {
@@ -44,10 +47,36 @@ const DashboardUser = () => {
   const fetchUsers = async () => {
     try {
       const res = await api.get("/admin/users");
-      setUsers(res.data);
+      const nonAdminUsers = res.data.filter(user => user.role !== 'admin');
+      setUsers(nonAdminUsers);
     } catch (err) {
       console.error("Erreur chargement users:", err);
     }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await api.get("/user");
+      setCurrentUser(res.data);
+    } catch (err) {
+      console.error("Erreur chargement user:", err);
+    }
+  };
+
+  const getTaskPermissions = (task) => {
+    if (!currentUser || !task) {
+      return { canChangeStatus: false, canEdit: false, canDelete: false };
+    }
+
+    const isAdmin = currentUser.role === 'admin';
+    const isCreator = task.created_by === currentUser.id;
+    const isAssignedToMe = task.assigned_to === currentUser.id;
+    
+    return {
+      canChangeStatus: isAdmin || isCreator || isAssignedToMe,
+      canEdit: isAdmin || isCreator,
+      canDelete: isAdmin || isCreator
+    };
   };
 
   const calculateStats = () => {
@@ -82,23 +111,45 @@ const DashboardUser = () => {
       await api.put(`/tasks/${id}`, { status: newStatus });
       setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t));
     } catch (err) {
-      setError("Erreur lors du changement d'état.");
+      if (err.response?.status === 403) {
+        setError("Vous n'êtes pas autorisé à modifier cette tâche.");
+      } else {
+        setError("Erreur lors du changement d'état.");
+      }
       console.error("Erreur détaillée:", err.response?.data);
     }
   };
 
   const handleEdit = (task) => {
+    const permissions = getTaskPermissions(task);
+    if (!permissions.canEdit) {
+      setError("Vous n'êtes pas autorisé à modifier cette tâche.");
+      return;
+    }
     setEditingTask(task);
     setShowForm(true);
   };
 
   const handleDelete = async (id) => {
+    const task = tasks.find(t => t.id === id);
+    const permissions = getTaskPermissions(task);
+    
+    if (!permissions.canDelete) {
+      setError("Vous n'êtes pas autorisé à supprimer cette tâche.");
+      return;
+    }
+
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
       try {
         await api.delete(`/tasks/${id}`);
         setTasks(tasks.filter(t => t.id !== id));
-      } catch {
-        setError("Erreur lors de la suppression.");
+      } catch (err) {
+        if (err.response?.status === 403) {
+          setError("Vous n'êtes pas autorisé à supprimer cette tâche.");
+        } else {
+          setError("Erreur lors de la suppression.");
+        }
+        console.error("Erreur détaillée:", err.response?.data);
       }
     }
   };
@@ -145,7 +196,7 @@ const DashboardUser = () => {
   if (loading) {
     return (
       <div className="layout">
-        <Sidebar />
+        <UserSidebar />
         <div className="content">
           <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -158,7 +209,7 @@ const DashboardUser = () => {
 
   return (
     <div className="layout">
-      <Sidebar />
+      <UserSidebar />
       
       <div className="content">
         <div className="dashboard-header">
@@ -252,6 +303,7 @@ const DashboardUser = () => {
             filteredTasks.map((task) => {
               const priorityInfo = getPriorityInfo(task.priority);
               const statusInfo = getStatusInfo(task.status);
+              const permissions = getTaskPermissions(task);
               
               return (
                 <div key={task.id} className="task-card">
@@ -285,26 +337,44 @@ const DashboardUser = () => {
                   </div>
                   
                   <div className="task-actions">
-                    <button
-                      onClick={() => handleStatusChange(task.id, task.status)}
-                      className="btn btn-sm btn-primary"
-                    >
-                      {task.status === "todo" ? "Commencer" : task.status === "in_progress" ? "Terminer" : "Réouvrir"}
-                    </button>
+                    {permissions.canChangeStatus && (
+                      <button
+                        onClick={() => handleStatusChange(task.id, task.status)}
+                        className="btn btn-sm btn-primary"
+                      >
+                        {task.status === "todo" ? "Commencer" : task.status === "in_progress" ? "Terminer" : "Réouvrir"}
+                      </button>
+                    )}
                     
-                    <button
-                      onClick={() => handleEdit(task)}
-                      className="btn btn-sm btn-outline"
-                    >
-                      ✏️
-                    </button>
+                    {permissions.canEdit && (
+                      <button
+                        onClick={() => handleEdit(task)}
+                        className="btn btn-sm btn-outline"
+                      >
+                        ✏️
+                      </button>
+                    )}
                     
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="btn btn-sm btn-danger"
-                    >
-                      🗑️
-                    </button>
+                    {permissions.canDelete && (
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="btn btn-sm btn-danger"
+                      >
+                        🗑️
+                      </button>
+                    )}
+
+                    {/* Message si l'utilisateur est assigné mais ne peut que changer le statut */}
+                    {task.assigned_to === currentUser?.id && 
+                     !permissions.canEdit && 
+                     permissions.canChangeStatus && (
+                      <span className="text-muted">Modification limitée</span>
+                    )}
+
+                    {/* Message pour lecture seule */}
+                    {!permissions.canChangeStatus && !permissions.canEdit && !permissions.canDelete && (
+                      <span className="text-muted">Lecture seule</span>
+                    )}
                   </div>
                 </div>
               );
@@ -404,7 +474,7 @@ const DashboardUser = () => {
                     <option value="">👤 Moi-même</option>
                     {users.map(user => (
                       <option key={user.id} value={user.id}>
-                        {user.name} {user.role === 'admin' ? '(Admin)' : ''}
+                        {user.name}
                       </option>
                     ))}
                   </select>
@@ -430,331 +500,6 @@ const DashboardUser = () => {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .layout {
-          background: linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%);
-          min-height: 100vh;
-        }
-        
-        .content {
-          background: var(--bg);
-          border-radius: 24px;
-          margin: 20px;
-          padding: 24px;
-          min-height: calc(100vh - 40px);
-        }
-        
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 32px;
-        }
-        
-        .dashboard-subtitle {
-          color: var(--muted);
-          margin-top: 8px;
-        }
-        
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 20px;
-          margin-bottom: 32px;
-        }
-        
-        .stat-card {
-          background: var(--white);
-          padding: 24px;
-          border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-        
-        .stat-icon {
-          font-size: 32px;
-          width: 60px;
-          height: 60px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f3f4f6;
-        }
-        
-        .stat-content h3 {
-          font-size: 28px;
-          font-weight: 800;
-          color: var(--violet);
-          margin: 0 0 4px 0;
-        }
-        
-        .stat-content p {
-          color: var(--muted);
-          margin: 0 0 8px 0;
-          font-weight: 600;
-        }
-        
-        .stat-change {
-          background: var(--violet);
-          color: white;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        
-        .filters-section {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 24px;
-          padding: 20px;
-          background: var(--white);
-          border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-        
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        
-        .filter-group label {
-          font-weight: 600;
-          color: var(--text);
-        }
-        
-        .filter-select {
-          padding: 10px 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          background: white;
-        }
-        
-        .tasks-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 20px;
-        }
-        
-        .task-card {
-          background: var(--white);
-          padding: 24px;
-          border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-          transition: all 0.3s ease;
-        }
-        
-        .task-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-        
-        .task-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-        
-        .task-title {
-          font-size: 18px;
-          font-weight: 600;
-          color: var(--text);
-          margin: 0;
-          flex: 1;
-        }
-        
-        .priority-badge {
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        
-        .priority-high {
-          background: rgba(239, 68, 68, 0.1);
-          color: #dc2626;
-          border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        
-        .priority-medium {
-          background: rgba(245, 158, 11, 0.1);
-          color: #d97706;
-          border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-        
-        .priority-low {
-          background: rgba(16, 185, 129, 0.1);
-          color: #059669;
-          border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        
-        .task-description {
-          color: var(--muted);
-          margin: 0 0 20px 0;
-          line-height: 1.5;
-        }
-        
-        .task-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 20px;
-        }
-        
-        .status-badge {
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        
-        .status-todo {
-          background: rgba(156, 163, 175, 0.1);
-          color: #6b7280;
-          border: 1px solid rgba(156, 163, 175, 0.2);
-        }
-        
-        .status-progress {
-          background: rgba(59, 130, 246, 0.1);
-          color: #2563eb;
-          border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-        
-        .status-done {
-          background: rgba(16, 185, 129, 0.1);
-          color: #059669;
-          border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        
-        .task-date, .task-assignee {
-          font-size: 12px;
-          color: var(--muted);
-          padding: 4px 8px;
-          background: #f8fafc;
-          border-radius: 12px;
-        }
-        
-        .task-actions {
-          display: flex;
-          gap: 8px;
-        }
-        
-        .empty-state {
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 60px 20px;
-          color: var(--muted);
-        }
-        
-        .empty-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
-          opacity: 0.5;
-        }
-        
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-          padding: 20px;
-        }
-        
-        .modal-content {
-          background: var(--white);
-          padding: 32px;
-          border-radius: 20px;
-          width: 100%;
-          max-width: 500px;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-        
-        .modal-content h2 {
-          margin: 0 0 24px 0;
-          color: var(--text);
-          text-align: center;
-        }
-        
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-        
-        .form-group {
-          margin-bottom: 20px;
-        }
-        
-        .form-input {
-          width: 100%;
-          padding: 12px 16px;
-          border: 2px solid #e5e7eb;
-          border-radius: 12px;
-          font-size: 14px;
-          transition: all 0.2s;
-        }
-        
-        .form-input:focus {
-          outline: none;
-          border-color: var(--violet-medium);
-          box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-        }
-        
-        .form-actions {
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-          margin-top: 24px;
-        }
-        
-        @media (max-width: 768px) {
-          .content {
-            margin: 10px;
-            padding: 16px;
-          }
-          
-          .dashboard-header {
-            flex-direction: column;
-            gap: 16px;
-            text-align: center;
-          }
-          
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-          
-          .filters-section {
-            flex-direction: column;
-          }
-          
-          .tasks-grid {
-            grid-template-columns: 1fr;
-          }
-          
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-          
-          .form-actions {
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   );
 };

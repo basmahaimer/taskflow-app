@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Route;
-use App\Models\User;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -18,7 +17,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/check-users', function () {
-    return User::all();
-});
 
+Route::get('/seed-user', function () {
+    Artisan::call('db:seed --class=UserSeeder');
+    return 'User created!';
+});

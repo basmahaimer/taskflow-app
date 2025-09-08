@@ -19,7 +19,7 @@ class TaskController extends Controller
         return response()->json($tasks);
     }
 
-    // ✅ Toutes les tâches pour l’admin
+    // ✅ Toutes les tâches pour l'admin
     public function adminIndex(Request $request)
     {
         if ($request->user()->role !== 'admin') {
@@ -60,24 +60,46 @@ class TaskController extends Controller
         return response()->json($task);
     }
 
-    // Mettre à jour une tâche (seul le créateur ou admin)
+    // Mettre à jour une tâche (créateur, admin OU utilisateur assigné pour le statut)
     public function update(Request $request, Task $task)
     {
-        if ($task->created_by !== $request->user()->id && $request->user()->role !== 'admin') {
-            return response()->json(['error' => 'Seul le créateur ou l’admin peut modifier cette tâche'], 403);
+        $user = $request->user();
+        
+        // Vérifier les permissions de base
+        $isCreatorOrAdmin = $task->created_by === $user->id || $user->role === 'admin';
+        $isAssignedUser = $task->assigned_to === $user->id;
+        
+        // Si l'utilisateur est seulement assigné (pas admin/créateur)
+        if ($isAssignedUser && !$isCreatorOrAdmin) {
+            // Autoriser uniquement la modification du statut
+            if ($request->hasAny(['title', 'description', 'priority', 'due_date', 'assigned_to'])) {
+                return response()->json([
+                    'error' => 'Vous ne pouvez modifier que le statut de cette tâche'
+                ], 403);
+            }
+            
+            // Valider seulement le statut
+            $validated = $request->validate([
+                'status' => 'required|in:todo,in_progress,done'
+            ]);
+        } 
+        // Si admin ou créateur, autoriser toutes les modifications
+        else if ($isCreatorOrAdmin) {
+            $validated = $request->validate([
+                'title' => 'sometimes|required|string|max:255',
+                'description' => 'nullable|string',
+                'status' => 'sometimes|required|in:todo,in_progress,done',
+                'priority' => 'sometimes|required|in:low,medium,high',
+                'due_date' => 'nullable|date',
+                'assigned_to' => 'nullable|exists:users,id'
+            ]);
+        }
+        // Si aucune permission
+        else {
+            return response()->json(['error' => 'Vous n\'êtes pas autorisé à modifier cette tâche'], 403);
         }
 
-        $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'sometimes|required|in:todo,in_progress,done',
-            'priority' => 'sometimes|required|in:low,medium,high', // <-- modifié
-            'due_date' => 'nullable|date',
-            'assigned_to' => 'nullable|exists:users,id'
-        ]);
-
         $task->update($validated);
-
         return response()->json($task);
     }
 
@@ -85,7 +107,7 @@ class TaskController extends Controller
     public function destroy(Request $request, Task $task)
     {
         if ($task->created_by !== $request->user()->id && $request->user()->role !== 'admin') {
-            return response()->json(['error' => 'Seul le créateur ou l’admin peut supprimer cette tâche'], 403);
+            return response()->json(['error' => 'Seul le créateur ou l\'admin peut supprimer cette tâche'], 403);
         }
 
         $task->delete();
@@ -96,7 +118,7 @@ class TaskController extends Controller
     public function assign(Request $request, Task $task)
     {
         if ($task->created_by !== $request->user()->id && $request->user()->role !== 'admin') {
-            return response()->json(['error' => 'Seul le créateur ou l’admin peut assigner cette tâche'], 403);
+            return response()->json(['error' => 'Seul le créateur ou l\'admin peut assigner cette tâche'], 403);
         }
 
         $validated = $request->validate([
