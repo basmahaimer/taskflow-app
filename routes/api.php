@@ -22,14 +22,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tasks/{task}', [TaskController::class, 'show']);
     Route::put('/tasks/{task}', [TaskController::class, 'update']);
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
-    Route::post('/tasks/{task}/assign', [TaskController::class, 'assign']); 
+    Route::post('/tasks/{task}/assign', [TaskController::class, 'assign']);
 
-    // CRUD Utilisateurs (Admin)
-    Route::apiResource('admin/users', AdminUserController::class);
-
-    // Route spéciale pour voir un user avec ses tâches
-    Route::get('/admin/users/{id}/details', [AdminUserController::class, 'showWithTasks']);
-
-    // ✅ Route spéciale Admin pour voir toutes les tâches
-    Route::get('/admin/tasks', [TaskController::class, 'index']);
+    // Routes Admin (protégées par le middleware admin)
+    Route::middleware('admin')->group(function () {
+        // CRUD Utilisateurs
+        Route::apiResource('admin/users', AdminUserController::class);
+        
+        // Route spéciale pour voir un user avec ses tâches
+        Route::get('/admin/users/{id}/details', [AdminUserController::class, 'showWithTasks']);
+        
+        // Route pour voir toutes les tâches
+        Route::get('/admin/tasks', [TaskController::class, 'adminIndex']);
+    });
 });
