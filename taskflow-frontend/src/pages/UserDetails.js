@@ -6,6 +6,8 @@ import api from "../services/api";
 const UserDetails = () => {
   const { id } = useParams();
   const [user, setUser] = useState(null);
+  const [createdTasks, setCreatedTasks] = useState([]);
+  const [assignedTasks, setAssignedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -14,9 +16,17 @@ const UserDetails = () => {
     const fetchUserDetails = async () => {
       try {
         const res = await api.get(`/admin/users/${id}/details`);
+        console.log("Données utilisateur:", res.data);
+        
         setUser(res.data);
+        
+        // Charger les tâches même si les relations ne sont pas présentes
+        setCreatedTasks(res.data.tasks_assigned_by || []);
+        setAssignedTasks(res.data.tasks_assigned_to || []);
+        
         setLoading(false);
       } catch (err) {
+        console.error("Erreur détaillée:", err);
         setError(
           err.response?.status === 404
             ? "Utilisateur non trouvé."
@@ -27,6 +37,17 @@ const UserDetails = () => {
     };
     fetchUserDetails();
   }, [id]);
+
+  // Fonction pour normaliser les classes CSS
+  const normalizeForCss = (str) => {
+    return str ? str.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : '';
+  };
+
+  // Fonction pour formater le texte
+  const formatText = (text) => {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1).replace(/_/g, ' ');
+  };
 
   if (loading) return (
     <div className="layout">
@@ -72,7 +93,7 @@ const UserDetails = () => {
             <div className="info-item">
               <span className="info-label">Rôle</span>
               <span className={`badge ${user?.role === 'admin' ? 'badge-admin' : 'badge-user'}`}>
-                {user?.role}
+                {user?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
               </span>
             </div>
             <div className="info-item">
@@ -98,22 +119,39 @@ const UserDetails = () => {
           <div className="task-section">
             <div className="section-header">
               <h2>Tâches créées par {user?.name}</h2>
-              <span className="badge count-badge">{user?.tasks_assigned_by?.length || 0}</span>
+              <span className="badge count-badge">{createdTasks.length}</span>
             </div>
-            {user?.tasks_assigned_by?.length > 0 ? (
+            {createdTasks.length > 0 ? (
               <div className="tasks-grid">
-                {user.tasks_assigned_by.map((task) => (
+                {createdTasks.map((task) => (
                   <div key={task.id} className="task-card">
                     <h3 className="task-title">{task.title}</h3>
                     <div className="task-meta">
-                      <span className={`status-badge status-${task.status?.toLowerCase()?.replace(' ', '-')}`}>
-                        {task.status}
+                      <span className={`status-badge status-${normalizeForCss(task.status)}`}>
+                        {formatText(task.status)}
                       </span>
-                      <span className={`priority-badge priority-${task.priority?.toLowerCase()}`}>
-                        {task.priority}
+                      <span className={`priority-badge priority-${normalizeForCss(task.priority)}`}>
+                        {formatText(task.priority)}
                       </span>
                     </div>
-                    <p className="task-assignee">Assigné à: {task.assigned_to}</p>
+                    <p className="task-assignee">
+                      <strong>Assigné à:</strong> {task.assignee?.name || "Non assigné"}
+                    </p>
+                    <p className="task-date">
+                      <strong>Créé le:</strong> {new Date(task.created_at).toLocaleDateString('fr-FR')}
+                    </p>
+                    {task.due_date && (
+                      <p className="task-date">
+                        <strong>Échéance:</strong> {new Date(task.due_date).toLocaleDateString('fr-FR')}
+                      </p>
+                    )}
+                    {task.description && (
+                      <p className="task-description">
+                        <strong>Description:</strong> {task.description.length > 100 
+                          ? `${task.description.substring(0, 100)}...` 
+                          : task.description}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -128,22 +166,39 @@ const UserDetails = () => {
           <div className="task-section">
             <div className="section-header">
               <h2>Tâches assignées à {user?.name}</h2>
-              <span className="badge count-badge">{user?.tasks_assigned_to?.length || 0}</span>
+              <span className="badge count-badge">{assignedTasks.length}</span>
             </div>
-            {user?.tasks_assigned_to?.length > 0 ? (
+            {assignedTasks.length > 0 ? (
               <div className="tasks-grid">
-                {user.tasks_assigned_to.map((task) => (
+                {assignedTasks.map((task) => (
                   <div key={task.id} className="task-card">
                     <h3 className="task-title">{task.title}</h3>
                     <div className="task-meta">
-                      <span className={`status-badge status-${task.status?.toLowerCase()?.replace(' ', '-')}`}>
-                        {task.status}
+                      <span className={`status-badge status-${normalizeForCss(task.status)}`}>
+                        {formatText(task.status)}
                       </span>
-                      <span className={`priority-badge priority-${task.priority?.toLowerCase()}`}>
-                        {task.priority}
+                      <span className={`priority-badge priority-${normalizeForCss(task.priority)}`}>
+                        {formatText(task.priority)}
                       </span>
                     </div>
-                    <p className="task-assignee">Assigné par: {task.assigned_by}</p>
+                    <p className="task-assignee">
+                      <strong>Créé par:</strong> {task.creator?.name || "Utilisateur inconnu"}
+                    </p>
+                    <p className="task-date">
+                      <strong>Assigné le:</strong> {new Date(task.created_at).toLocaleDateString('fr-FR')}
+                    </p>
+                    {task.due_date && (
+                      <p className="task-date">
+                        <strong>Échéance:</strong> {new Date(task.due_date).toLocaleDateString('fr-FR')}
+                      </p>
+                    )}
+                    {task.description && (
+                      <p className="task-description">
+                        <strong>Description:</strong> {task.description.length > 100 
+                          ? `${task.description.substring(0, 100)}...` 
+                          : task.description}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -159,7 +214,7 @@ const UserDetails = () => {
         <div className="action-buttons">
           <button
             className="btn button-primary"
-            onClick={() => navigate(`/admin/edit-user/${user?.id}`)}
+            onClick={() => navigate(`/admin/users/${user?.id}/edit`)}
           >
             ✏️ Modifier l'utilisateur
           </button>

@@ -44,17 +44,22 @@ class AdminUserController extends Controller
         return response()->json($user);
     }
 
-    // ✅ Récupérer un utilisateur avec ses tâches
+    // ✅ Récupérer un utilisateur avec ses tâches (CORRIGÉ)
     public function showWithTasks($id)
-    {
-        $user = User::with(['tasksAssignedBy', 'tasksAssignedTo'])->find($id);
+{
+    $user = User::with([
+        'tasksAssignedBy.creator', 
+        'tasksAssignedBy.assignee',
+        'tasksAssignedTo.creator',
+        'tasksAssignedTo.assignee'
+    ])->find($id);
 
-        if (!$user) {
-            return response()->json(['message' => 'Utilisateur non trouvé'], 404);
-        }
-
-        return response()->json($user);
+    if (!$user) {
+        return response()->json(['message' => 'Utilisateur non trouvé'], 404);
     }
+
+    return response()->json($user);
+}
 
     // Modifier un utilisateur
     public function update(Request $request, User $user)
