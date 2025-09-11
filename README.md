@@ -174,6 +174,12 @@ Les contributions sont les bienvenues ! Pour contribuer :
 4. Push sur la branche (`git push origin feature/ma-fonctionnalite`)
 5. Ouvrez une Pull Request
 
+## 📊 Diagrammes UML
+Les diagrammes UML utilisés pour la conception de l’application sont disponibles dans le dossier [UML Diagrammes](./UML%20Diagrammes).
+
+Exemple :  
+![Diagramme UML](./UML%20Diagrammes/diagram1.svg)
+
 ## 📝 Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
